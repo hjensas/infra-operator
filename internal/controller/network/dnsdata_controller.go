@@ -222,6 +222,14 @@ func (r *DNSDataReconciler) generateServiceConfigMaps(
 
 	configMapData := map[string]string{}
 
+	// Sort hosts by IP to ensure deterministic ordering. Without this,
+	// the ConfigMap content can change between reconciliations even when
+	// the underlying data is the same, causing unnecessary hash changes
+	// and triggering dnsmasq deployment updates.
+	sort.Slice(instance.Spec.Hosts, func(i, j int) bool {
+		return instance.Spec.Hosts[i].IP < instance.Spec.Hosts[j].IP
+	})
+
 	var configData string
 	for _, host := range instance.Spec.Hosts {
 		configData += host.IP
